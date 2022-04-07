@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: birds-app-back-end-deployment
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: birds-app-back-end-{{ username }}
+  template:
+    metadata:
+      labels:
+        app: birds-app-back-end-{{ username }}
+    spec:
+      containers:
+        - image: 'ghcr.io/{{ username }}/birds-app-back-end:{{ version }}'
+          name: birds-back-front-end
+          ports:
+            - containerPort: 8080

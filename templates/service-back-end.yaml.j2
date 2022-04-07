@@ -2,11 +2,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: uug-demo-api
+  name: birds-app-back-end-service
 spec:
   ports:
     - name: http
-      port: 3000
+      port: 8080
       protocol: TCP
   selector:
-    app: uug-demo-api
+    app: birds-app-back-end-{{ username }}

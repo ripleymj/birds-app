@@ -10,7 +10,7 @@ on:
 
 jobs:
   check:
-    name: Run repo lint and sanity checks
+    name: Repo lint and sanity check
     runs-on: ubuntu-latest
     steps:
       - name: Clone the repository
@@ -24,11 +24,14 @@ jobs:
           pip3 install yamllint j2cli
       - name: Run Jinja
         run: |
-          j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
-          j2 -o k8s/service.yaml templates/service.yaml.j2
+          j2 -o k8s/deployment-back-end.yaml templates/deployment-back-end.yaml.j2
+          j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
+          j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
+          j2 -o k8s/service-front-end.yaml templates/service-front-end.yaml.j2
           j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
         env:
           version: ${{ github.sha }}
+          username: ${{ github.actor }}
       - name: Run actions yamllint
         run: |
           yamllint -d "{extends: default, rules: {line-length: {max: 120}}}" k8s/*
@@ -171,23 +174,17 @@ jobs:
           pip3 install j2cli
       - name: Run Jinja
         run: |
-          j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
-          j2 -o k8s/service.yaml templates/service.yaml.j2
+          j2 -o k8s/deployment-back-end.yaml templates/deployment-back-end.yaml.j2
+          j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
+          j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
+          j2 -o k8s/service-front-end.yaml templates/service-front-end.yaml.j2
           j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
         env:
           version: ${{ github.sha }}
+          username: ${{ github.actor }}
       - run: |
           git config --global user.email "bot@github.com"
           git config --global user.name "GitHub Bot"
           git add k8s/
           git commit -m "Publish new image"
           git push
-      - uses: snok/container-retention-policy@v1
-        with:
-          image-names: birds-app-front-end, birds-app-back-end
-          cut-off: one hours ago UTC-4
-          timestamp-to-use: updated_at
-          account-type: personal
-          keep-at-least: 1
-          skip-tags: latest
-          token: ${{ secrets.GITHUB_TOKEN }}
