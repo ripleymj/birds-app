@@ -24,7 +24,6 @@ jobs:
           pip3 install yamllint j2cli
       - name: Run Jinja
         run: |
-          mkdir k8s
           j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
           j2 -o k8s/service.yaml templates/service.yaml.j2
           j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
@@ -105,6 +104,15 @@ jobs:
     steps:
       - name: Clone the repository
         uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Build app
+        run: |
+          cd front-end
+          npm ci --silent
+          npm install react-scripts -g --silent
+          npm run build
 
   test-front-end:
     name: Test front-end
@@ -130,7 +138,6 @@ jobs:
           pip3 install j2cli
       - name: Run Jinja
         run: |
-          mkdir k8s
           j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
           j2 -o k8s/service.yaml templates/service.yaml.j2
           j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
