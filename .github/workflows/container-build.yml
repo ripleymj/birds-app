@@ -182,3 +182,12 @@ jobs:
           git add k8s/
           git commit -m "Publish new image"
           git push
+      - uses: snok/container-retention-policy@v1
+        with:
+          image-names: test-front-end, test-back-end
+          cut-off: one hours ago UTC-4
+          timestamp-to-use: updated_at
+          account-type: personal
+          keep-at-least: 1
+          skip-tags: latest
+          token: ${{ secrets.GITHUB_TOKEN }}
