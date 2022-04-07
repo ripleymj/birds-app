@@ -15,7 +15,7 @@ spec:
         app: uug-demo-api
     spec:
       containers:
-        - image: 'ghcr.io/ripleymj/uug-demo-api:adf0eee46cb7675eea872be0f77bfa6472fe31b7'
+        - image: 'ghcr.io/ripleymj/uug-demo-api:672f60b1d2995e2c59b3bfd9867f59e89bf8f863'
           name: uug-demo-api
           ports:
             - containerPort: 3000
