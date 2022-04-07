@@ -1,0 +1,123 @@
+name: Build uug-demo-api container
+env:
+  IMAGE_NAME: uug-demo-api
+  REGISTRY: ghcr.io/ripleymj
+on:
+  push:
+    paths-ignore:
+      - 'k8s/**'
+
+jobs:
+  check:
+    name: Run repo lint and sanity checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: |
+          pip3 install yamllint j2cli
+      - name: Run Jinja
+        run:
+          j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
+          j2 -o k8s/service.yaml templates/service.yaml.j2
+          j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
+        env:
+          version: ${{ github.sha }}
+      - name: Run actions yamllint
+        run: |
+          yamllint -d "{extends: default, rules: {line-length: {max: 120}}}" k8s/*
+      - name: Fetch and untar kubeval
+        run: |
+          wget -nv https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar zxf kubeval-linux-amd64.tar.gz
+      - name: Run kubeval
+        run: |
+          ./kubeval k8s/deployment.yaml
+          ./kubeval k8s/service.yaml
+          ./kubeval k8s/ingress.yaml
+  build-back-end:
+    name: Build image
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+
+      - name: Buildah Action
+        id: build-image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: latest ${{ github.sha }}
+          containerfiles: |
+            ./Containerfile
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GitHub Container Repository
+        id: push-to-ghcr
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.REGISTRY }}
+
+      - name: Print image URL
+        run: echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
+  test-back-end:
+    name: Test Image
+    needs: build-back-end
+    runs-on: ubuntu-latest
+    services:
+      # Label used to access the service container
+      uug-demo-api:
+        # Docker Hub image
+        image: ghcr.io/ripleymj/uug-demo-api:latest
+        ports:
+          - 3000:3000
+    steps:
+      - run: |
+          sleep 5
+          curl http://localhost:3000
+          curl http://localhost:3000/earthquakes/latest
+        name: Test fetching from container
+  build-front-end:
+    name: Build front end
+  test-front-end:
+    name: Test front end
+  publish:
+    name: Publish Updated Image
+    needs: test-front-end, test-back-end
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: |
+          pip3 install j2cli
+      - name: Run Jinja
+        run: |
+          j2 -o k8s/deployment.yaml deployment.yaml.j2
+          j2 -o k8s/service.yaml service.yaml.j2
+          j2 -o k8s/ingress.yaml ingress.yaml.j2
+        env:
+          version: ${{ github.sha }}
+      - run: |
+          git config --global user.email "bot@github.com"
+          git config --global user.name "GitHub Bot"
+          git add k8s/deployment.yaml
+          git commit -m "Publish new image"
+          git push 

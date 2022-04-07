@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: uug-demo-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: uug-demo-api
+  template:
+    metadata:
+      labels:
+        app: uug-demo-api
+    spec:
+      containers:
+        - image: 'ghcr.io/ripleymj/uug-demo-api:{{ version }}'
+          name: uug-demo-api
+          ports:
+            - containerPort: 3000
