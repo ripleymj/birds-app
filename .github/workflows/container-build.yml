@@ -91,12 +91,12 @@ jobs:
       birds-app-back-end:
         image: ghcr.io/ripleymj/birds-app-back-end:latest
         ports:
-          - 3000:3000
+          - 8080:8080
     steps:
       - name: Test fetching from container
         run: |
           sleep 5
-          curl http://localhost:3000
+          curl http://localhost:8080
 
   build-front-end:
     name: Build front-end
