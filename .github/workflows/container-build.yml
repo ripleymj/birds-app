@@ -130,14 +130,15 @@ jobs:
           pip3 install j2cli
       - name: Run Jinja
         run: |
-          j2 -o k8s/deployment.yaml deployment.yaml.j2
-          j2 -o k8s/service.yaml service.yaml.j2
-          j2 -o k8s/ingress.yaml ingress.yaml.j2
+          mkdir k8s
+          j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
+          j2 -o k8s/service.yaml templates/service.yaml.j2
+          j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
         env:
           version: ${{ github.sha }}
       - run: |
           git config --global user.email "bot@github.com"
           git config --global user.name "GitHub Bot"
-          git add k8s/deployment.yaml
+          git add k8s/
           git commit -m "Publish new image"
           git push 
