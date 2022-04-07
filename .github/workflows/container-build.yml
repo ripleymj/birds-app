@@ -22,7 +22,8 @@ jobs:
         run: |
           pip3 install yamllint j2cli
       - name: Run Jinja
-        run:
+        run: |
+          mkdir k8s
           j2 -o k8s/deployment.yaml templates/deployment.yaml.j2
           j2 -o k8s/service.yaml templates/service.yaml.j2
           j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
@@ -49,7 +50,7 @@ jobs:
         uses: actions/checkout@v2
       - uses: actions/setup-go@v3
         with:
-          go-version: '^1.15
+          go-version: '^1.15'
       - name: Download dependencies
         run: |
           cd back-end
@@ -101,11 +102,23 @@ jobs:
         name: Test fetching from container
   build-front-end:
     name: Build front end
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+
   test-front-end:
     name: Test front end
+    needs: build-front-end
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@v2
+
   publish:
     name: Publish Updated Image
-    needs: test-front-end, test-back-end
+    needs: [test-front-end, test-back-end]
     runs-on: ubuntu-latest
     steps:
       - name: Clone the repository
