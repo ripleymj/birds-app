@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: birds-app-back-end-deployment
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: birds-app-back-end-ripleymj
+  template:
+    metadata:
+      labels:
+        app: birds-app-back-end-ripleymj
+    spec:
+      containers:
+        - image: 'ghcr.io/ripleymj/birds-app-back-end:73b9030291fd125c21cd0a83d9dcca79ca55a0b0'
+          name: birds-back-front-end
+          ports:
+            - containerPort: 8080
