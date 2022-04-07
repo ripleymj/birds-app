@@ -184,7 +184,7 @@ jobs:
           git push
       - uses: snok/container-retention-policy@v1
         with:
-          image-names: test-front-end, test-back-end
+          image-names: birds-app-front-end, birds-app-back-end
           cut-off: one hours ago UTC-4
           timestamp-to-use: updated_at
           account-type: personal
