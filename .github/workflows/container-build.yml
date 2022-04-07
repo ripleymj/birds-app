@@ -1,6 +1,7 @@
 name: Build uug-demo-api container
 env:
-  IMAGE_NAME: uug-demo-api
+  FE_IMAGE_NAME: birds-app-front-end
+  BE_IMAGE_NAME: birds-app-back-end
   REGISTRY: ghcr.io/ripleymj
 on:
   push:
@@ -60,7 +61,7 @@ jobs:
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ env.IMAGE_NAME }}
+          image: ${{ env.BE_IMAGE_NAME }}
           tags: latest ${{ github.sha }}
           containerfiles: |
             back-end/Containerfile
@@ -87,17 +88,16 @@ jobs:
     runs-on: ubuntu-latest
     services:
       # Label used to access the service container
-      uug-demo-api:
-        # Docker Hub image
-        image: ghcr.io/ripleymj/uug-demo-api:latest
+      birds-app-back-end:
+        image: ghcr.io/ripleymj/birds-app-back-end:latest
         ports:
           - 3000:3000
     steps:
-      - run: |
+      - name: Test fetching from container
+        run: |
           sleep 5
           curl http://localhost:3000
-          curl http://localhost:3000/earthquakes/latest
-        name: Test fetching from container
+
   build-front-end:
     name: Build front-end
     needs: check
