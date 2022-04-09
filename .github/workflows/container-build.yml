@@ -28,7 +28,8 @@ jobs:
           j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
           j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
           j2 -o k8s/service-front-end.yaml templates/service-front-end.yaml.j2
-          j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
+          j2 -o k8s/ingress-back-end.yaml templates/ingress-back-end.yaml.j2
+          j2 -o k8s/ingress-front-end.yaml templates/ingress-front-end.yaml.j2
         env:
           version: ${{ github.sha }}
           username: ${{ github.actor }}
@@ -64,7 +65,6 @@ jobs:
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ env.BE_IMAGE_NAME }}
-          tags: latest ${{ github.sha }}
           containerfiles: |
             back-end/Containerfile
       - name: Export container image
@@ -90,14 +90,14 @@ jobs:
           podman load -i ${{steps.download.outputs.download-path}}/backend.tar
       - name: Launch container
         run: |
-          podman run -d --rm -p 8080:8080 --name birds-app-back-end ${{ env.BE_IMAGE_NAME }}:testing
+          podman run -d --rm -p 8080:8080 --name ${{ env.BE_IMAGE_NAME }} ${{ env.BE_IMAGE_NAME }}:testing
       - name: Test fetching from container
         run: |
           sleep 5
           curl http://localhost:8080
       - name: Stop container
         run: |
-          podman stop birds-app-back-end
+          podman stop ${{ env.BE_IMAGE_NAME }}
 
   build-front-end:
     name: Build front-end
@@ -120,42 +120,40 @@ jobs:
         uses: redhat-actions/buildah-build@v2
         with:
           image: ${{ env.FE_IMAGE_NAME }}
-          tags: latest ${{ github.sha }}
           containerfiles: |
             front-end/Containerfile
-      - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@v1
+      - name: Export container image
+        run: |
+          buildah push ${{ steps.build-image.outputs.image }} oci-archive:frontend.tar:${{ env.FE_IMAGE_NAME }}:testing
+      - name: Upload Image
+        uses: actions/upload-artifact@v3
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push to GitHub Container Repository
-        id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: ${{ steps.build-image.outputs.tags }}
-          registry: ${{ env.REGISTRY }}
-
-      - name: Print image URL
-        run: echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
+          name: frontend
+          path: frontend.tar
+          retention-days: 1
 
   test-front-end:
     name: Test front-end
     needs: build-front-end
     runs-on: ubuntu-latest
-    services:
-      # Label used to access the service container
-      birds-app-front-end:
-        image: ghcr.io/ripleymj/birds-app-front-end:latest
-        ports:
-          - 80:80
     steps:
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: frontend
+      - name: Import container
+        run: |
+          podman load -i ${{steps.download.outputs.download-path}}/frontend.tar
+      - name: Launch container
+        run: |
+          podman run -d --rm -p 8080:80 --name ${{ env.FE_IMAGE_NAME }} ${{ env.FE_IMAGE_NAME }}:testing
       - name: Test fetching from container
         run: |
           sleep 5
-          curl http://localhost
+          curl http://localhost:8080
+      - name: Stop container
+        run: |
+          podman stop ${{ env.FE_IMAGE_NAME }}
 
   publish:
     name: Publish Updated Image
@@ -164,6 +162,37 @@ jobs:
     steps:
       - name: Clone the repository
         uses: actions/checkout@v2
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          path: artifacts/
+      - name: Import containers
+        run: |
+          podman load -i ${{steps.download.outputs.download-path}}/frontend/frontend.tar
+          podman tag ${{ env.FE_IMAGE_NAME }}:testing ${{ env.FE_IMAGE_NAME }}:latest
+          podman tag ${{ env.FE_IMAGE_NAME }}:testing ${{ env.FE_IMAGE_NAME }}:${{ github.sha }}
+          podman load -i ${{steps.download.outputs.download-path}}/backend/backend.tar
+          podman tag ${{ env.BE_IMAGE_NAME }}:testing ${{ env.BE_IMAGE_NAME }}:latest
+          podman tag ${{ env.BE_IMAGE_NAME }}:testing ${{ env.BE_IMAGE_NAME }}:${{ github.sha }}
+          podman images
+      - name: Push front-end to GitHub Container Repository
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ env.FE_IMAGE_NAME }}
+          tags: latest ${{ github.sha }}
+          registry: ${{ env.REGISTRY }}
+      - name: Push back-end to GitHub Container Repository
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ env.BE_IMAGE_NAME }}
+          tags: latest ${{ github.sha }}
+          registry: ${{ env.REGISTRY }}
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
@@ -177,7 +206,8 @@ jobs:
           j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
           j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
           j2 -o k8s/service-front-end.yaml templates/service-front-end.yaml.j2
-          j2 -o k8s/ingress.yaml templates/ingress.yaml.j2
+          j2 -o k8s/ingress-back-end.yaml templates/ingress-back-end.yaml.j2
+          j2 -o k8s/ingress-front-end.yaml templates/ingress-front-end.yaml.j2
         env:
           version: ${{ github.sha }}
           username: ${{ github.actor }}
