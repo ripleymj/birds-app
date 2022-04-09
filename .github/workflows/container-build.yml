@@ -1,4 +1,4 @@
-name: Build uug-demo-api container
+name: Build Birds App
 env:
   FE_IMAGE_NAME: birds-app-front-end
   BE_IMAGE_NAME: birds-app-back-end
@@ -88,17 +88,17 @@ jobs:
     name: Test back-end
     needs: build-back-end
     runs-on: ubuntu-latest
-    services:
-      # Label used to access the service container
-      birds-app-back-end:
-        image: ghcr.io/ripleymj/birds-app-back-end:latest
-        ports:
-          - 8080:8080
     steps:
+      - name: Launch container
+        run: |
+          podman run -d --rm -p 8080:8080 --name birds-app-back-end ghcr.io/ripleymj/birds-app-back-end:latest
       - name: Test fetching from container
         run: |
           sleep 5
           curl http://localhost:8080
+      - name: Stop container
+        run: |
+          podman stop birds-app-back-end
 
   build-front-end:
     name: Build front-end
@@ -183,8 +183,8 @@ jobs:
           version: ${{ github.sha }}
           username: ${{ github.actor }}
       - run: |
-          git config --global user.email "bot@github.com"
-          git config --global user.name "GitHub Bot"
+          git config --global user.email "bot@jmunixusers.org"
+          git config --global user.name "UUG Bot"
           git add k8s/
           git commit -m "Publish new image"
           git push
