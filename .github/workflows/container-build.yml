@@ -55,11 +55,11 @@ jobs:
         run: |
           cd back-end
           go mod download
-      - name: Build application
+      - name: Compile application
         run: |
           cd back-end
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o app .
-      - name: Buildah Action
+      - name: Build container
         id: build-image
         uses: redhat-actions/buildah-build@v2
         with:
@@ -73,18 +73,24 @@ jobs:
       - name: Upload Image
         uses: actions/upload-artifact@v3
         with:
+          name: backend
           path: backend.tar
           retention-days: 1
-      - name: Print image URL
-        run: echo "Image pushed to ${{ steps.push-to-ghcr.outputs.registry-paths }}"
   test-back-end:
     name: Test back-end
     needs: build-back-end
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: backend
+      - name: Import container
+        run: |
+          podman load -i ${{steps.download.outputs.download-path}}/backend.tar
       - name: Launch container
         run: |
-          podman run -d --rm -p 8080:8080 --name birds-app-back-end ghcr.io/ripleymj/birds-app-back-end:latest
+          podman run -d --rm -p 8080:8080 --name birds-app-back-end ${{ env.BE_IMAGE_NAME }}:testing
       - name: Test fetching from container
         run: |
           sleep 5
