@@ -24,6 +24,7 @@ jobs:
           pip3 install yamllint j2cli
       - name: Run Jinja
         run: |
+          rm k8s/*
           j2 -o k8s/deployment-back-end.yaml templates/deployment-back-end.yaml.j2
           j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
           j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
@@ -202,6 +203,7 @@ jobs:
           pip3 install j2cli
       - name: Run Jinja
         run: |
+          rm k8s/*
           j2 -o k8s/deployment-back-end.yaml templates/deployment-back-end.yaml.j2
           j2 -o k8s/deployment-front-end.yaml templates/deployment-front-end.yaml.j2
           j2 -o k8s/service-back-end.yaml templates/service-back-end.yaml.j2
