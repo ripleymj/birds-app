@@ -37,7 +37,7 @@ func main() {
 	randSource := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(randSource)
 
-	app.Get("/", func(c *fiber.Ctx) error {
+	app.Get("/*", func(c *fiber.Ctx) error {
 		return c.JSON(birds[random.Intn(len(birds))])
 	})
 
