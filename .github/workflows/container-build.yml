@@ -111,6 +111,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16'
+          cache: 'npm'
+          cache-dependency-path: |
+            front-end/package-lock.json
       - name: Build app
         run: |
           cd front-end
