@@ -15,7 +15,7 @@ spec:
         app: birds-app-back-end-ripleymj
     spec:
       containers:
-        - image: 'ghcr.io/ripleymj/birds-app-back-end:42ab6bda67d20aeba4bbf26c49e1b704649df92f'
+        - image: 'ghcr.io/ripleymj/birds-app-back-end:fc173a1715ca6b260c0aeb22e95dd7fd23775290'
           name: birds-back-front-end
           ports:
             - containerPort: 8080
