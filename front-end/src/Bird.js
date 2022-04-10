@@ -8,6 +8,7 @@ function Bird() {
 
   useEffect(() => {
     fetch("/api")
+      .then(response => response.json())
       .then((res) => {
         setData(res.data);
         console.log(res.data);
