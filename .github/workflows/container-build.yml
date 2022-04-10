@@ -2,11 +2,12 @@ name: Build Birds App
 env:
   FE_IMAGE_NAME: birds-app-front-end
   BE_IMAGE_NAME: birds-app-back-end
-  REGISTRY: ghcr.io/ripleymj
+  REGISTRY: ghcr.io/${{ github.actor }}
 on:
   push:
     paths-ignore:
       - 'k8s/**'
+  workflow_dispatch:
 
 jobs:
   check:
